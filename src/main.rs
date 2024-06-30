@@ -17,18 +17,59 @@ const SCREEN_WIDTH: u32 = 1024;
 const SCREEN_HEIGHT: u32 = 768;
 
 // vertex data type
-type Pos = [f32; 2];
+type Pos = [f32; 3];
 type Color = [f32; 3];
 
 #[repr(C, packed)]
 struct Vertex(Pos, Color);
 
-// vertex data for triangle
+// vertex data for triangle (positiom, color)
 #[rustfmt::skip]
-const VERTICES: [Vertex; 3] = [
-    Vertex([-0.5, -0.5], [1.0, 0.0, 0.0]),
-    Vertex([0.5,  -0.5], [0.0, 1.0, 0.0]),
-    Vertex([0.0,   0.5], [0.0, 0.0, 1.0])
+const _VERTICES_TRIANGE: [Vertex; 3] = [
+    Vertex([-0.5, -0.5, 0.0], [1.0, 0.0, 0.0]),
+    Vertex([0.5,  -0.5, 0.0], [0.0, 1.0, 0.0]),
+    Vertex([0.0,   0.5, 0.0], [0.0, 0.0, 1.0])
+];
+
+// a cube has 6 faces with 2 triangles each, so this makes 6*2=12 triangles, and 12*3 vertices
+#[rustfmt::skip]
+const VERTICES_CUBE: [Vertex; 36] = [
+    Vertex([-1.0,-1.0,-1.0], [0.583,  0.771,  0.014]),
+    Vertex([-1.0,-1.0, 1.0], [0.609,  0.115,  0.436]),
+    Vertex([-1.0, 1.0, 1.0], [0.327,  0.483,  0.844]),
+    Vertex([1.0, 1.0,-1.0], [0.822,  0.569,  0.201]),
+    Vertex([-1.0,-1.0,-1.0], [0.435,  0.602,  0.223]),
+    Vertex([-1.0, 1.0,-1.0], [0.310,  0.747,  0.185]),
+    Vertex([1.0,-1.0, 1.0], [0.597,  0.770,  0.761]),
+    Vertex([-1.0,-1.0,-1.0], [0.559,  0.436,  0.730]),
+    Vertex([1.0,-1.0,-1.0], [0.359,  0.583,  0.152]),
+    Vertex([1.0, 1.0,-1.0], [0.483,  0.596,  0.789]),
+    Vertex([1.0,-1.0,-1.0], [0.559,  0.861,  0.639]),
+    Vertex([-1.0,-1.0,-1.0], [0.195,  0.548,  0.859]),
+    Vertex([-1.0,-1.0,-1.0], [0.014,  0.184,  0.576]),
+    Vertex([-1.0, 1.0, 1.0], [0.771,  0.328,  0.970]),
+    Vertex([-1.0, 1.0,-1.0], [0.406,  0.615,  0.116]),
+    Vertex([1.0,-1.0, 1.0], [0.676,  0.977,  0.133]),
+    Vertex([-1.0,-1.0, 1.0], [0.971,  0.572,  0.833]),
+    Vertex([-1.0,-1.0,-1.0], [0.140,  0.616,  0.489]),
+    Vertex([-1.0, 1.0, 1.0], [0.997,  0.513,  0.064]),
+    Vertex([-1.0,-1.0, 1.0], [0.945,  0.719,  0.592]),
+    Vertex([1.0,-1.0, 1.0], [0.543,  0.021,  0.978]),
+    Vertex([1.0, 1.0, 1.0], [0.279,  0.317,  0.505]),
+    Vertex([1.0,-1.0,-1.0], [0.167,  0.620,  0.077]),
+    Vertex([1.0, 1.0,-1.0], [0.347,  0.857,  0.137]),
+    Vertex([1.0,-1.0,-1.0], [0.055,  0.953,  0.042]),
+    Vertex([1.0, 1.0, 1.0], [0.714,  0.505,  0.345]),
+    Vertex([1.0,-1.0, 1.0], [0.783,  0.290,  0.734]),
+    Vertex([1.0, 1.0, 1.0], [0.722,  0.645,  0.174]),
+    Vertex([1.0, 1.0,-1.0], [0.302,  0.455,  0.848]),
+    Vertex([-1.0, 1.0,-1.0], [0.225,  0.587,  0.040]),
+    Vertex([1.0, 1.0, 1.0], [0.517,  0.713,  0.338]),
+    Vertex([-1.0, 1.0,-1.0], [0.053,  0.959,  0.120]),
+    Vertex([-1.0, 1.0, 1.0], [0.393,  0.621,  0.362]),
+    Vertex([1.0, 1.0, 1.0], [0.673,  0.211,  0.457]),
+    Vertex([-1.0, 1.0, 1.0], [0.820,  0.883,  0.371]),
+    Vertex([1.0,-1.0, 1.0], [0.982,  0.099,  0.879])
 ];
 
 #[macro_export]
@@ -96,7 +137,7 @@ fn main() {
     let program = unsafe { ShaderProgram::new(&[vertex_shader, fragment_shader]).unwrap() };
 
     let vertex_buffer = unsafe { Buffer::new(gl::ARRAY_BUFFER) };
-    unsafe { vertex_buffer.set_data(&VERTICES, gl::STATIC_DRAW) };
+    unsafe { vertex_buffer.set_data(&VERTICES_CUBE, gl::STATIC_DRAW) };
     let vertex_array = unsafe { VertexArray::new() };
     let pos_attrib = unsafe { program.get_attrib_location("position").unwrap() };
     unsafe { set_attribute!(vertex_array, pos_attrib, Vertex::0) };
@@ -140,13 +181,20 @@ fn main() {
         gl::UniformMatrix4fv(matrix_id, 1, gl::FALSE, mvp_ptr);
     }
 
+    // set up z-buffering
+    unsafe {
+        gl::Enable(gl::DEPTH_TEST);
+        gl::DepthFunc(gl::LESS);
+    }
+
     // loop until the user closes the window
     while !window.should_close() {
         unsafe {
             gl::ClearColor(0.3, 0.3, 0.3, 1.0);
-            gl::Clear(gl::COLOR_BUFFER_BIT);
+            gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
             program.apply();
-            gl::DrawArrays(gl::TRIANGLES, 0, 3);
+            // TODO - get from vertex array length
+            gl::DrawArrays(gl::TRIANGLES, 0, 36);
         }
         // swap front and back buffers
         window.swap_buffers();
