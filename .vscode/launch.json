@@ -8,7 +8,7 @@
             "name": "(lldb) Launch",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/ray-tracer",
+            "program": "${workspaceFolder}/target/debug/ray-tracing",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",

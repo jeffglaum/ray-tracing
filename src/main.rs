@@ -1,4 +1,5 @@
 // https://dev.to/samkevich/learn-opengl-with-rust-creating-a-window-1792
+// http://www.opengl-tutorial.org/beginners-tutorials/tutorial-1-opening-a-window/
 
 mod shader;
 mod vao;
@@ -9,6 +10,7 @@ use crate::vao::VertexArray;
 use crate::vbo::Buffer;
 use gl;
 use glfw::{fail_on_errors, Action, Context, Key};
+use glm;
 use std::fs;
 
 const SCREEN_WIDTH: u32 = 1024;
@@ -101,6 +103,42 @@ fn main() {
     let color_attrib = unsafe { program.get_attrib_location("color").unwrap() };
     unsafe { set_attribute!(vertex_array, color_attrib, Vertex::1) };
     unsafe { vertex_array.bind() };
+
+    // construct a projection matrix
+    let proj = glm::ext::perspective_rh(
+        glm::radians(45.0),
+        SCREEN_WIDTH as f32 / SCREEN_HEIGHT as f32,
+        0.1,
+        100.0,
+    );
+
+    // construct a camera matrix
+    let view = glm::ext::look_at_rh(
+        glm::vec3(4.0, 3.0, 3.0),
+        glm::vec3(0.0, 0.0, 0.0),
+        glm::vec3(0.0, 1.0, 0.0),
+    );
+
+    // construct a model matrix (identity matrix for now)
+    // TODO better way to init an identity matrix?
+    let model = glm::mat4(
+        1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0,
+    );
+
+    // build the MVP matrix
+    let mvp = proj * view * model;
+
+    unsafe { program.apply() };
+
+    // give the mvp matrix to the shader as a uniform
+    let mvp_string_ptr = "MVP".as_ptr() as *const i8;
+    let matrix_id = unsafe { gl::GetUniformLocation(program.get_id(), mvp_string_ptr) };
+
+    // send our mvp matrix to the currently-bound shader
+    unsafe {
+        let mvp_ptr: *const f32 = std::mem::transmute(&mvp);
+        gl::UniformMatrix4fv(matrix_id, 1, gl::FALSE, mvp_ptr);
+    }
 
     // loop until the user closes the window
     while !window.should_close() {

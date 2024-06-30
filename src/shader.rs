@@ -106,6 +106,10 @@ impl ShaderProgram {
         let attrib = CString::new(attrib)?;
         Ok(gl::GetAttribLocation(self.id, attrib.as_ptr()) as GLuint)
     }
+
+    pub fn get_id(&self) -> u32 {
+        return self.id;
+    }
 }
 
 impl Drop for ShaderProgram {
