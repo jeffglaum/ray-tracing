@@ -84,8 +84,8 @@ fn main() {
 
     // load shaders
     // TODO
-    let vertex_shader_source = fs::read_to_string("./src/shaders/shader.vertexshader").unwrap();
-    let fragment_shader_source = fs::read_to_string("./src/shaders/shader.fragmentshader").unwrap();
+    let vertex_shader_source = fs::read_to_string("./src/shaders/vertex_shader.glsl").unwrap();
+    let fragment_shader_source = fs::read_to_string("./src/shaders/fragment_shader.glsl").unwrap();
     let vertex_shader =
         unsafe { Shader::new(vertex_shader_source.as_str(), gl::VERTEX_SHADER).unwrap() };
     let fragment_shader =
