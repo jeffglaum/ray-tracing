@@ -4,6 +4,12 @@ pub struct VertexArray {
 }
 
 impl VertexArray {
+    pub fn get_id(&self) -> GLuint {
+        self.id
+    }
+}
+
+impl VertexArray {
     pub unsafe fn new() -> Self {
         let mut id: GLuint = 0;
         gl::GenVertexArrays(1, &mut id);

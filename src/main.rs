@@ -11,6 +11,7 @@ use crate::vbo::Buffer;
 use gl;
 use glfw::{fail_on_errors, Action, Context, Key};
 use glm;
+//use obj::{Obj, ObjData};
 use std::fs;
 
 const SCREEN_WIDTH: u32 = 1024;
@@ -25,15 +26,17 @@ struct Vertex(Pos, Color);
 
 // vertex data for triangle (positiom, color)
 #[rustfmt::skip]
-const _VERTICES_TRIANGE: [Vertex; 3] = [
+const VERTICES_TRIANGLE: [Vertex; 3] = [
     Vertex([-0.5, -0.5, 0.0], [1.0, 0.0, 0.0]),
     Vertex([0.5,  -0.5, 0.0], [0.0, 1.0, 0.0]),
     Vertex([0.0,   0.5, 0.0], [0.0, 0.0, 1.0])
 ];
 
+const INDICES_TRIANGLE: [u32; 3] = [0, 1, 2];
+
 // a cube has 6 faces with 2 triangles each, so this makes 6*2=12 triangles, and 12*3 vertices
 #[rustfmt::skip]
-const VERTICES_CUBE: [Vertex; 36] = [
+const _VERTICES_CUBE: [Vertex; 36] = [
     Vertex([-1.0,-1.0,-1.0], [0.583,  0.771,  0.014]),
     Vertex([-1.0,-1.0, 1.0], [0.609,  0.115,  0.436]),
     Vertex([-1.0, 1.0, 1.0], [0.327,  0.483,  0.844]),
@@ -90,6 +93,23 @@ macro_rules! set_attribute {
     }};
 }
 
+// load shaders
+fn load_shader_program() -> ShaderProgram {
+    // TODO
+    let vertex_shader_source = fs::read_to_string("./src/shaders/vertex_shader.glsl").unwrap();
+    let fragment_shader_source = fs::read_to_string("./src/shaders/fragment_shader.glsl").unwrap();
+    let vertex_shader =
+        unsafe { Shader::new(vertex_shader_source.as_str(), gl::VERTEX_SHADER).unwrap() };
+    let fragment_shader =
+        unsafe { Shader::new(fragment_shader_source.as_str(), gl::FRAGMENT_SHADER).unwrap() };
+
+    let program = unsafe { ShaderProgram::new(&[vertex_shader, fragment_shader]).unwrap() };
+
+    unsafe { program.apply() };
+
+    // return the program
+    program
+}
 fn main() {
     // initialize GLFW
     let mut glfw = glfw::init(fail_on_errors!()).unwrap();
@@ -101,7 +121,7 @@ fn main() {
         glfw::OpenGlProfileHint::Core,
     ));
 
-    // create a windowed mode window and its OGL context
+    // create a window and its OGL context
     let (mut window, events) = glfw
         .create_window(
             SCREEN_WIDTH,
@@ -109,12 +129,12 @@ fn main() {
             "Ray Tracing",
             glfw::WindowMode::Windowed,
         )
-        .expect("ERROR: Failed to create GLFW window.");
+        .expect("ERROR: failed to create GLFW window");
 
     // get OGL version
     let context_version = window.get_context_version();
     println!(
-        "INFO: OGL context version = {0}.{1}",
+        "INFO: ogl context version = {0}.{1}",
         context_version.major, context_version.minor
     );
 
@@ -125,24 +145,35 @@ fn main() {
     // load OGL on the GLFW window
     gl::load_with(|s| window.get_proc_address(s) as *const _);
 
-    // load shaders
-    // TODO
-    let vertex_shader_source = fs::read_to_string("./src/shaders/vertex_shader.glsl").unwrap();
-    let fragment_shader_source = fs::read_to_string("./src/shaders/fragment_shader.glsl").unwrap();
-    let vertex_shader =
-        unsafe { Shader::new(vertex_shader_source.as_str(), gl::VERTEX_SHADER).unwrap() };
-    let fragment_shader =
-        unsafe { Shader::new(fragment_shader_source.as_str(), gl::FRAGMENT_SHADER).unwrap() };
+    // load and apply the shader program
+    let program = load_shader_program();
+    unsafe { program.apply() };
 
-    let program = unsafe { ShaderProgram::new(&[vertex_shader, fragment_shader]).unwrap() };
+    // load the model from an obj file
+    // let suzanne = Obj::load("./resources/suzanne.obj").unwrap();
+    // let vbs = suzanne.data.position;
+    // let fs = suzanne.data.objects.get(index)
+    // println!("vbs = {:?}", vbs);
+    // println!("fs = {:?}", fs);
 
+    // create vertex buffer
     let vertex_buffer = unsafe { Buffer::new(gl::ARRAY_BUFFER) };
-    unsafe { vertex_buffer.set_data(&VERTICES_CUBE, gl::STATIC_DRAW) };
+    unsafe { vertex_buffer.set_data(&VERTICES_TRIANGLE, gl::STATIC_DRAW) };
+
+    // create a vertex array
     let vertex_array = unsafe { VertexArray::new() };
+
+    // set vertex array attributes for shader usage: position and color
     let pos_attrib = unsafe { program.get_attrib_location("position").unwrap() };
     unsafe { set_attribute!(vertex_array, pos_attrib, Vertex::0) };
     let color_attrib = unsafe { program.get_attrib_location("color").unwrap() };
     unsafe { set_attribute!(vertex_array, color_attrib, Vertex::1) };
+
+    // create index (element) buffer
+    let index_buffer = unsafe { Buffer::new(gl::ELEMENT_ARRAY_BUFFER) };
+    unsafe { index_buffer.set_data(&INDICES_TRIANGLE, gl::STATIC_DRAW) };
+
+    // bind the vertex array
     unsafe { vertex_array.bind() };
 
     // construct a projection matrix
@@ -169,8 +200,6 @@ fn main() {
     // build the MVP matrix
     let mvp = proj * view * model;
 
-    unsafe { program.apply() };
-
     // give the mvp matrix to the shader as a uniform
     let mvp_string_ptr = "MVP".as_ptr() as *const i8;
     let matrix_id = unsafe { gl::GetUniformLocation(program.get_id(), mvp_string_ptr) };
@@ -192,9 +221,15 @@ fn main() {
         unsafe {
             gl::ClearColor(0.3, 0.3, 0.3, 1.0);
             gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
-            program.apply();
+
             // TODO - get from vertex array length
-            gl::DrawArrays(gl::TRIANGLES, 0, 36);
+            gl::BindVertexArray(vertex_array.get_id());
+            gl::DrawElements(
+                gl::TRIANGLES,
+                INDICES_TRIANGLE.len() as i32,
+                gl::UNSIGNED_INT,
+                std::ptr::null(),
+            );
         }
         // swap front and back buffers
         window.swap_buffers();

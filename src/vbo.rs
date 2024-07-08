@@ -10,15 +10,11 @@ impl Buffer {
         gl::GenBuffers(1, &mut id);
         Self { id, target }
     }
-}
 
-impl Buffer {
     pub unsafe fn bind(&self) {
         gl::BindBuffer(self.target, self.id);
     }
-}
 
-impl Buffer {
     pub unsafe fn set_data<D>(&self, data: &[D], usage: GLuint) {
         self.bind();
         let (_, data_bytes, _) = data.align_to::<u8>();
