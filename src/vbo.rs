@@ -15,7 +15,8 @@ impl Buffer {
         gl::BindBuffer(self.target, self.id);
     }
 
-    pub unsafe fn set_data<D>(&self, data: &[D], usage: GLuint) {
+    //pub unsafe fn set_data<D>(&self, data: &[D], usage: GLuint) {
+    pub unsafe fn set_data<D>(&self, data: Vec<D>, usage: GLuint) {
         self.bind();
         let (_, data_bytes, _) = data.align_to::<u8>();
         gl::BufferData(
