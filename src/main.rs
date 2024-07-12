@@ -147,7 +147,7 @@ fn main() {
 
     // construct a camera matrix
     let view = glm::ext::look_at_rh(
-        glm::vec3(0.0, 0.0, 3.0),
+        glm::vec3(0.0, 0.0, 5.0),
         glm::vec3(0.0, 0.0, 0.0),
         glm::vec3(0.0, 1.0, 0.0),
     );
@@ -177,14 +177,19 @@ fn main() {
         gl::DepthFunc(gl::LESS);
     }
 
+    let mut show_wireframe = true;
+
     // loop until the user closes the window
     while !window.should_close() {
         unsafe {
             gl::ClearColor(0.3, 0.3, 0.3, 1.0);
             gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
 
-            gl::PolygonMode(gl::FRONT_AND_BACK, gl::LINE);
-            //gl::PolygonMode(gl::FRONT_AND_BACK, gl::FILL);
+            if show_wireframe {
+                gl::PolygonMode(gl::FRONT_AND_BACK, gl::LINE);
+            } else {
+                gl::PolygonMode(gl::FRONT_AND_BACK, gl::FILL);
+            }
 
             gl::BindVertexArray(vertex_array.get_id());
             gl::DrawElements(
@@ -204,6 +209,9 @@ fn main() {
             match event {
                 glfw::WindowEvent::Key(Key::Escape, _, Action::Press, _) => {
                     window.set_should_close(true)
+                }
+                glfw::WindowEvent::Key(Key::Tab, _, Action::Press, _) => {
+                    show_wireframe = !show_wireframe;
                 }
                 _ => {}
             }
