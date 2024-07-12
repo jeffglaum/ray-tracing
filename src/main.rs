@@ -100,10 +100,11 @@ fn main() {
 
     // load the model from an obj file
     // TODO
-    let suzanne = Obj::load("./resources/suzanne.obj").unwrap();
+    let suzanne = Obj::load("./resources/iso-sphere.obj").unwrap();
     let mut vertices: Vec<Vertex> = vec![];
     for v in suzanne.data.position {
-        vertices.push(Vertex(v, [0.0, 1.0, 0.0]));
+        // push both vertices and a per-vertex color
+        vertices.push(Vertex(v, [1.0, 1.0, 1.0]));
     }
     let mut indices: Vec<u32> = vec![];
     for o in suzanne.data.objects {
