@@ -100,7 +100,7 @@ fn main() {
 
     // load the model from an obj file
     // TODO
-    let suzanne = Obj::load("./resources/iso-sphere.obj").unwrap();
+    let suzanne = Obj::load("./resources/suzanne.obj").unwrap();
     let mut vertices: Vec<Vertex> = vec![];
     for v in suzanne.data.position {
         // push both vertices and a per-vertex color
@@ -155,7 +155,7 @@ fn main() {
 
     // construct a model matrix (identity matrix for now)
     // TODO better way to init an identity matrix?
-    let model = glm::mat4(
+    let mut model = glm::mat4(
         1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0,
     );
 
@@ -180,6 +180,8 @@ fn main() {
 
     let mut show_wireframe = true;
 
+    let camera_location = glm::vec3(0.0, 0.0, 5.0);
+
     // loop until the user closes the window
     while !window.should_close() {
         unsafe {
@@ -191,6 +193,16 @@ fn main() {
             } else {
                 gl::PolygonMode(gl::FRONT_AND_BACK, gl::FILL);
             }
+
+            // construct a camera matrix
+            let view = glm::ext::look_at_rh(
+                camera_location,
+                glm::vec3(0.0, 0.0, 0.0),
+                glm::vec3(0.0, 1.0, 0.0),
+            );
+            let mvp = proj * view * model;
+            let mvp_ptr: *const f32 = std::mem::transmute(&mvp);
+            gl::UniformMatrix4fv(matrix_id, 1, gl::FALSE, mvp_ptr);
 
             gl::BindVertexArray(vertex_array.get_id());
             gl::DrawElements(
@@ -206,13 +218,31 @@ fn main() {
         // poll for and process events
         glfw.poll_events();
         for (_, event) in glfw::flush_messages(&events) {
-            println!("{:?}", event);
+            //println!("{:?}", event);
             match event {
                 glfw::WindowEvent::Key(Key::Escape, _, Action::Press, _) => {
                     window.set_should_close(true)
                 }
                 glfw::WindowEvent::Key(Key::Tab, _, Action::Press, _) => {
                     show_wireframe = !show_wireframe;
+                }
+                glfw::WindowEvent::Key(Key::Equal, _, Action::Press | Action::Repeat, _) => {
+                    model = glm::ext::scale(&model, glm::vec3(1.1, 1.1, 1.1));
+                }
+                glfw::WindowEvent::Key(Key::Minus, _, Action::Press | Action::Repeat, _) => {
+                    model = glm::ext::scale(&model, glm::vec3(0.9, 0.9, 0.9));
+                }
+                glfw::WindowEvent::Key(Key::Left, _, Action::Press | Action::Repeat, _) => {
+                    model = glm::ext::rotate(&model, 0.0875, glm::vec3(0.0, 1.0, 0.0));
+                }
+                glfw::WindowEvent::Key(Key::Right, _, Action::Press | Action::Repeat, _) => {
+                    model = glm::ext::rotate(&model, -0.0875, glm::vec3(0.0, 1.0, 0.0));
+                }
+                glfw::WindowEvent::Key(Key::Up, _, Action::Press | Action::Repeat, _) => {
+                    model = glm::ext::rotate(&model, -0.0875, glm::vec3(1.0, 0.0, 0.0));
+                }
+                glfw::WindowEvent::Key(Key::Down, _, Action::Press | Action::Repeat, _) => {
+                    model = glm::ext::rotate(&model, 0.0875, glm::vec3(1.0, 0.0, 0.0));
                 }
                 _ => {}
             }
