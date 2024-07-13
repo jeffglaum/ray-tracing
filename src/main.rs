@@ -12,6 +12,7 @@ use gl;
 use glfw::{fail_on_errors, Action, Context, Key};
 use glm;
 use obj::Obj;
+use rand::Rng;
 use std::fs;
 
 const SCREEN_WIDTH: u32 = 1024;
@@ -104,7 +105,12 @@ fn main() {
     let mut vertices: Vec<Vertex> = vec![];
     for v in suzanne.data.position {
         // push both vertices and a per-vertex color
-        vertices.push(Vertex(v, [1.0, 1.0, 1.0]));
+        let color = [
+            rand::thread_rng().gen_range(0..1000) as f32 / 1000.0,
+            rand::thread_rng().gen_range(0..1000) as f32 / 1000.0,
+            rand::thread_rng().gen_range(0..1000) as f32 / 1000.0,
+        ];
+        vertices.push(Vertex(v, color));
     }
     let mut indices: Vec<u32> = vec![];
     for o in suzanne.data.objects {
