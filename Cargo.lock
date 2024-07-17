@@ -248,12 +248,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "obj"
-version = "0.10.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "059c95245738cdc7b40078cdd51a23200252a4c0a0a6dd005136152b3f467a4a"
-
-[[package]]
 name = "objc-sys"
 version = "0.3.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -391,9 +385,9 @@ dependencies = [
  "gl",
  "glfw",
  "glm",
- "obj",
  "rand 0.8.5",
  "thiserror",
+ "wavefront_rs",
 ]
 
 [[package]]
@@ -497,6 +491,11 @@ name = "wasi"
 version = "0.11.0+wasi-snapshot-preview1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9c8d87e72b64a3b4db28d11ce29237c246188f4f51057d65a7eab63b7987e423"
+
+[[package]]
+name = "wavefront_rs"
+version = "0.0.0"
+source = "git+https://github.com/replicadse/wavefront_rs.git#44692787f127fbb5289cdd3045f6f4cf5e7db233"
 
 [[package]]
 name = "winapi"

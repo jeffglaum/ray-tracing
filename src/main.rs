@@ -11,9 +11,10 @@ use crate::vbo::Buffer;
 use gl;
 use glfw::{fail_on_errors, Action, Context, Key};
 use glm;
-use obj::Obj;
 use rand::Rng;
 use std::fs;
+use std::io::BufReader;
+use wavefront_rs::obj::{entity::*, parser::*};
 
 const SCREEN_WIDTH: u32 = 1024;
 const SCREEN_HEIGHT: u32 = 768;
@@ -23,6 +24,7 @@ type Pos = [f32; 3];
 type Color = [f32; 3];
 
 #[repr(C, packed)]
+#[derive(Debug)]
 struct Vertex(Pos, Color);
 
 #[macro_export]
@@ -100,28 +102,29 @@ fn main() {
     unsafe { program.apply() };
 
     // load the model from an obj file
-    // TODO
-    let suzanne = Obj::load("./resources/suzanne.obj").unwrap();
     let mut vertices: Vec<Vertex> = vec![];
-    for v in suzanne.data.position {
-        // push both vertices and a per-vertex color
-        let color = [
-            rand::thread_rng().gen_range(0..1000) as f32 / 1000.0,
-            rand::thread_rng().gen_range(0..1000) as f32 / 1000.0,
-            rand::thread_rng().gen_range(0..1000) as f32 / 1000.0,
-        ];
-        vertices.push(Vertex(v, color));
-    }
     let mut indices: Vec<u32> = vec![];
-    for o in suzanne.data.objects {
-        for g in o.groups {
-            for p in g.polys {
-                for it in p.0 {
-                    indices.push(it.0 as u32);
-                }
+    let file = fs::File::open("./resources/sphere.obj").unwrap();
+    Parser::read_to_end(&mut BufReader::new(file), |x| match x {
+        Entity::Vertex { x, y, z, w: _ } => {
+            let v = [x as f32, y as f32, z as f32];
+            let color = [
+                rand::thread_rng().gen_range(0..1000) as f32 / 1000.0,
+                rand::thread_rng().gen_range(0..1000) as f32 / 1000.0,
+                rand::thread_rng().gen_range(0..1000) as f32 / 1000.0,
+            ];
+            vertices.push(Vertex(v, color));
+        }
+        Entity::Face { vertices } => {
+            for v in vertices {
+                //println!("{:?}", v);
+                // note: subtrace one because vector array starts at index 0
+                indices.push((v.vertex - 1) as u32);
             }
         }
-    }
+        _ => {}
+    })
+    .unwrap();
     let indices_length = indices.len() as i32;
 
     // create vertex buffer
